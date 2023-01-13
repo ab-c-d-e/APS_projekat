@@ -9,10 +9,10 @@ namespace TheScientistAPI.Model
 
         public string Text { get; set; }
 
-        public NotificationType NotificationType { get; set; }
+        public NotificationType? NotificationType { get; set; }
 
-        public List<NotificationUser> Users { get; set; }
+        public List<NotificationUser>? Users { get; set; }
 
-        public Segment Segment { get; set; }
+        public Segment? Segment { get; set; }
     }
 }

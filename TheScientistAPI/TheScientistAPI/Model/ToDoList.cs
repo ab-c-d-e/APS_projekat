@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Identity;
 
 namespace TheScientistAPI.Model
 {
@@ -11,6 +12,6 @@ namespace TheScientistAPI.Model
 
         public User User { get; set; }
 
-        public List<ToDoItem> Items { get; set; }
+        public List<ToDoItem>? Items { get; set; }
     }
 }

@@ -12,6 +12,6 @@ namespace TheScientistAPI.Model
 
         public int Depth { get; set; }
 
-        public List<Segment> Segments { get; set; }
+        public List<Segment>? Segments { get; set; }
     }
 }

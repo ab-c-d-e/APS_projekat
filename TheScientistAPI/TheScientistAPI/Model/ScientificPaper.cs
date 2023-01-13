@@ -13,6 +13,6 @@ namespace TheScientistAPI.Model
 
         public string Description { get; set; }
 
-        public List<Segment> Segments { get; set; }
+        public List<Segment>? Segments { get; set; }
     }
 }

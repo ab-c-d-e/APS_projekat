@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.AspNetCore.Identity;
 
 namespace TheScientistAPI.Model
 {
@@ -10,8 +11,8 @@ namespace TheScientistAPI.Model
 
         public bool Seen { get; set; }
 
-        public User User { get; set; }
+        public User? User { get; set; }
 
-        public Message Message { get; set; }
+        public Message? Message { get; set; }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.AspNetCore.Identity;
 
 namespace TheScientistAPI.Model
 {
@@ -12,7 +13,7 @@ namespace TheScientistAPI.Model
 
         public User Sender { get; set; }
 
-        public List<MessageUser> Recivers { get; set; }
+        public List<MessageUser>? Recivers { get; set; }
 
         public ScientificPaper ScientificPaper { get; set; }
     }

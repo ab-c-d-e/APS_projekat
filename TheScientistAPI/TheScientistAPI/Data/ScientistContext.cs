@@ -1,20 +1,19 @@
 ﻿using System;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using TheScientistAPI.Model;
 
 namespace TheScientistAPI.Data
 {
-    public class ScientistContext : DbContext
+    public class ScientistContext : IdentityDbContext<User>
     {
         public ScientistContext(DbContextOptions<ScientistContext> options):base(options)
         { }
-        DbSet<User> Users { get; set; }
-        DbSet<UserType> UserTypes { get; set; }
         DbSet<ScientificPaper> ScientificPapers { get; set; }
         DbSet<PaperUser> PaperUsers { get; set; }
         DbSet<Section> Sections { get; set; }
         DbSet<CodeSegment> CodeSegments { get; set; }
-        DbSet<TextSegment> TextSegments { get; set; }
+        DbSet<Image> TextSegments { get; set; }
         DbSet<Image> Imege { get; set; }
         DbSet<ToDoList> ToDoLists { get; set; }
         DbSet<ToDoItem> ToDoItems { get; set; }
@@ -26,10 +25,16 @@ namespace TheScientistAPI.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            base.OnModelCreating(modelBuilder);
             modelBuilder.Entity<MessageUser>()
             .HasOne(m => m.User)
             .WithMany(t => t.Messages)
             .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<Section>().ToTable("Sections");
+            modelBuilder.Entity<CodeSegment>().ToTable("CodeSegments");
+            modelBuilder.Entity<Image>().ToTable("TextSegments");
+            modelBuilder.Entity<Image>().ToTable("Images");
         }
     }
 }
