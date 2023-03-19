@@ -2,16 +2,12 @@
 
 namespace TheScientistAPI.Model
 {
-    public class Section:Segment
+    public class Section
     {
-
-        [MaxLength(50)]
-        public string Title { get; set; }
-
-        public int Number { get; set; }
-
-        public int Depth { get; set; }
-
-        public List<Segment>? Segments { get; set; }
+        [Key]
+        public int Id { get; set; }
+        public string Type { get; set; }
+        public string Content { get; set; }
+        public List<Section> Subsections { get; set; }
     }
 }

@@ -1,5 +1,4 @@
-﻿using System.Linq;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using TheScientistAPI.Data;
 using TheScientistAPI.Infrastructure;
 
@@ -19,32 +18,29 @@ namespace TheScientistAPI.Service
             _dbSet = context.Set<T>();
         }
 
-        public virtual async Task<bool> Add(T entity)
+        public void Add(T entity)
         {
-            await _dbSet.AddAsync(entity);
-            return true;
+            _dbSet.Add(entity);
         }
 
-        public virtual async Task<List<T>> All()
+        public void Remove(T entity)
         {
-            return await _dbSet.ToListAsync();
+            _dbSet.Remove(entity);
         }
 
-        public virtual Task<bool> Delete(int id)
+        public void Update(T entity)
         {
-            throw new NotImplementedException();
+            _context.Entry(entity).State = EntityState.Modified;
         }
 
-        public virtual async Task<T> GetById(int id)
+        public T GetById(int id)
         {
-            return 
-                await _dbSet.FindAsync(id)?? 
-                throw new Exception("Entity with this key does not exist");
+            return _dbSet.Find(id);
         }
 
-        public virtual Task<bool> Upsert(T entity)
+        public IEnumerable<T> GetAll()
         {
-            throw new NotImplementedException();
+            return _dbSet.AsEnumerable();
         }
     }
 }

@@ -2,9 +2,10 @@
 
 namespace TheScientistAPI.DTOs
 {
-    public class UserLoginRequestDto
+    public class LoginDto
     {
         [Required]
+        [EmailAddress]
         public string Email { get; set; }
 
         [Required]

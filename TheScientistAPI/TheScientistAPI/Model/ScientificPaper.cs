@@ -1,18 +1,22 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using TheScientistAPI.Model;
+using static Microsoft.Extensions.Logging.EventSource.LoggingEventSource;
 
 namespace TheScientistAPI.Model
 {
     public class ScientificPaper
     {
         [Key]
-        public int ID { get; set; }
-
-        [MaxLength(50)]
+        public int Id { get; set; }
         public string Title { get; set; }
+        public string Abstract { get; set; }
+        public bool IsPublic { get; set; }
+        public bool IsFinished { get; set; }
 
-        public string Description { get; set; }
+        public ApplicationUser Creator { get; set; }
 
-        public List<Segment>? Segments { get; set; }
+        public List<Section> Sections { get; set; }
+        public List<Keyword> Keywords { get; set; }
+        public List<Reference> References { get; set; }
+        public List<UserRole> UserRoles { get; set; }
     }
 }

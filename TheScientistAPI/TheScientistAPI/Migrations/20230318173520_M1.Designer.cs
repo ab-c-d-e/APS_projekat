@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TheScientistAPI.Data;
 
@@ -11,9 +12,11 @@ using TheScientistAPI.Data;
 namespace TheScientistAPI.Migrations
 {
     [DbContext(typeof(ScientistContext))]
-    partial class ScientistContextModelSnapshot : ModelSnapshot
+    [Migration("20230318173520_M1")]
+    partial class M1
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

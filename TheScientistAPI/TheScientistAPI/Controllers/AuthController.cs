@@ -11,12 +11,12 @@ namespace TheScientistAPI.Controllers
 {
     [ApiController]
     [Route("[controller]")]
-    public class AuthenticationController : ControllerBase
+    public class AuthController : ControllerBase
     {
-        private readonly UserManager<User> _userMenager;
+        private readonly UserManager<ApplicationUser> _userMenager;
         private readonly IConfiguration _configuration;
 
-        public AuthenticationController(UserManager<User> userMenager, IConfiguration configuration)
+        public AuthController(UserManager<ApplicationUser> userMenager, IConfiguration configuration)
         {
             _userMenager = userMenager;
             _configuration = configuration;
@@ -24,7 +24,7 @@ namespace TheScientistAPI.Controllers
 
         [HttpPost]
         [Route("Register")]
-        public async Task<IActionResult> Register(UserRegistrationRequestDto userDto)
+        public async Task<IActionResult> Register(RegisterDto userDto)
         {
             if(ModelState.IsValid)
             {
@@ -38,9 +38,9 @@ namespace TheScientistAPI.Controllers
                     }
                 });
 
-                var user_new = new User()
+                var user_new = new ApplicationUser()
                 {
-                    Name=userDto.Name,
+                    FirstName=userDto.FirstName,
                     LastName=userDto.LastName,
                     UserName=userDto.UserName,
                     Email=userDto.Email,
@@ -72,7 +72,7 @@ namespace TheScientistAPI.Controllers
 
         [HttpPost]
         [Route("Login")]
-        public async Task<IActionResult> Login(UserLoginRequestDto userDto)
+        public async Task<IActionResult> Login(LoginDto userDto)
         {
             if (ModelState.IsValid)
             {
@@ -107,11 +107,11 @@ namespace TheScientistAPI.Controllers
             else return new JsonResult("Data you entered is incorrect") { StatusCode = 500 };
         }
 
-        string GenerateJwtToken(User user)
+        string GenerateJwtToken(ApplicationUser user)
         {
             var jwtTokenHandeler = new JwtSecurityTokenHandler();
 
-            var key = Encoding.UTF8.GetBytes(_configuration.GetSection("JwtConfig:Secret").Value);
+            var key = Encoding.UTF8.GetBytes(_configuration.GetSection("JwtSettings:SecretKey").Value);
 
             var tokenDescriptor = new SecurityTokenDescriptor()
             {
