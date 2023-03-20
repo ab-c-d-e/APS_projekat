@@ -6,6 +6,7 @@ using Microsoft.OpenApi.Models;
 using TheScientistAPI.Configuration;
 using TheScientistAPI.Data;
 using TheScientistAPI.Model;
+using TheScientistAPI.SignalR;
 
 var myAllowScecificOrigins = "_myAllowSpecificOrigins";
 
@@ -44,6 +45,8 @@ builder.Services.AddSwaggerGen(c => {
     });
 });
 
+builder.Services.AddSignalR();
+
 //Unit of work to DI container
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
@@ -81,6 +84,7 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
 })
 .AddEntityFrameworkStores<ScientistContext>();
 
+
 //Enable Cors
 builder.Services.AddCors(options =>
 {
@@ -107,6 +111,7 @@ app.UseCors(myAllowScecificOrigins);
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.MapHub<ScientistHub>("/scientistHub");
 
 app.MapControllers();
 

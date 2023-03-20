@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace TheScientistAPI.Model
 {
@@ -8,6 +9,8 @@ namespace TheScientistAPI.Model
         [Key]
         public int Id { get; set; }
         public ApplicationUser User { get; set; }
+
+        [JsonIgnore]
         public ScientificPaper ScientificPaper { get; set; }
         public UserRoleType RoleType { get; set; }
     }

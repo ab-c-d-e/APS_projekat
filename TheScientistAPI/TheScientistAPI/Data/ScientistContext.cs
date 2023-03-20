@@ -14,7 +14,6 @@ namespace TheScientistAPI.Data
         DbSet<ApplicationUser> ApplicationUsers { get; set; }
         DbSet<Keyword> Keywords { get; set; }
         DbSet<Reference> References { get; set; }
-        DbSet<SectionType> SectionTypes { get; set; }
         DbSet<UserRole> UserRoles { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

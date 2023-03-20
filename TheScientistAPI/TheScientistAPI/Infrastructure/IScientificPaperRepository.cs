@@ -4,6 +4,6 @@ namespace TheScientistAPI.Infrastructure
 {
     public interface IScientificPaperRepository:IGenericRepository<ScientificPaper>
     {
-        ScientificPaper GetById(int id, bool includeRelatedEntities);
+        ScientificPaper GetById(int id, bool includeKeywords, bool includeUsers, bool includeSections);
     }
 }
