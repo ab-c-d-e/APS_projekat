@@ -3,13 +3,13 @@ using Microsoft.AspNetCore.Mvc;
 using TheScientistAPI.Configuration;
 using TheScientistAPI.DTOs;
 using TheScientistAPI.Model;
-using TheScientistAPI.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using System.Security.Claims;
 using System.Data;
-using Microsoft.AspNetCore.SignalR;
 using TheScientistAPI.SignalR;
+using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 
 namespace TheScientistAPI.Controllers
 {
@@ -30,7 +30,7 @@ namespace TheScientistAPI.Controllers
         }
 
         [HttpPost("new")]
-        public async Task<IActionResult> CreateScientificPaper([FromBody] ScientificPaperDTO scientificPaperDto)
+        public async Task<IActionResult> CreateScientificPaper([FromBody] ScientificPaperDto scientificPaperDto)
         {
             string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var user = await _userManager.FindByEmailAsync(userId);
@@ -39,25 +39,51 @@ namespace TheScientistAPI.Controllers
             {
                 Title = scientificPaperDto.Title,
                 Abstract = scientificPaperDto.Abstract,
+                Journal = scientificPaperDto.Journal,
+                IsPublic = scientificPaperDto.IsPublic,
+                Status = PaperStatus.Active,
                 Keywords = new List<Keyword>(),
                 References = new List<Reference>(),
                 Sections = new List<Section>(),
+                UserRoles=new List<UserRole>(),
+                Messages = new List<Message>(),
                 Creator = user
             };
+
+            foreach (var keyword in scientificPaperDto.Keywords)
+            {
+                if (!scientificPaper.Keywords.Select(k => k.Name).Contains(keyword))
+                {
+                    var kw1 = new Keyword { Name = keyword };
+                    var kw2 = _unitOfWork.Keywords.GetByName(keyword);
+                    if (kw2 == null)
+                    {
+                        scientificPaper.Keywords.Add(kw1);
+                    }
+                    else
+                    {
+                        scientificPaper.Keywords.Add(kw2);
+                    }
+                }
+            }
 
             _unitOfWork.ScientificPapers.Add(scientificPaper);
             await _unitOfWork.CompleteAsync();
 
-            return Ok(scientificPaper);
+            var connection = _hubContext.Clients.Group(User.FindFirstValue(ClaimTypes.NameIdentifier));
+            await connection.SendAsync("ReceiveMessage", "New Scientific Paper Created: " + scientificPaper.Title);
+
+            return Ok(scientificPaper.AsDto());
         }
 
-        [HttpPut("edit/{id}")]
-        public async Task<IActionResult> UpdateScientificPaper(int id, [FromBody] ScientificPaperEditDto scientificPaperUpdateDto)
+        [HttpPut("edit")]
+        public async Task<IActionResult> UpdateScientificPaper([FromBody] ScientificPaperEditDto scientificPaperEditDto)
         {
             string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var user = await _userManager.FindByEmailAsync(userId);
 
-            var scientificPaper = _unitOfWork.ScientificPapers.GetById(id, true, false, false);
+            var scientificPaper = _unitOfWork.ScientificPapers.GetById(scientificPaperEditDto.Id, true, false, false, false, false);
+
             if (scientificPaper == null)
             {
                 return NotFound();
@@ -67,43 +93,61 @@ namespace TheScientistAPI.Controllers
             {
                 return Unauthorized();
             }
-            var previousState = new ScientificPaperMemento(scientificPaper);
 
-            scientificPaper.Title = scientificPaperUpdateDto.Title;
-            scientificPaper.Abstract = scientificPaperUpdateDto.Abstract;
+            scientificPaper.Title = scientificPaperEditDto.Title;
+            scientificPaper.Abstract = scientificPaperEditDto.Abstract;
+            scientificPaper.Journal = scientificPaperEditDto.Journal;
+            scientificPaper.IsPublic = scientificPaperEditDto.IsPublic;
+            scientificPaper.Status = scientificPaperEditDto.Status;
 
-            var keywordsToAdd = scientificPaperUpdateDto.Keywords
-                .Except(scientificPaper.Keywords.Select(k => k.Name), StringComparer.OrdinalIgnoreCase)
-                .Select(name => new Keyword { Name = name });
-            scientificPaper.Keywords.AddRange(keywordsToAdd);
+            if (scientificPaper.Status == PaperStatus.Published)
+                scientificPaper.Year = DateTime.Now.Year;
 
-            var keywordsToRemove = scientificPaper.Keywords
-                .Where(k => !scientificPaperUpdateDto.Keywords.Contains(k.Name, StringComparer.OrdinalIgnoreCase))
-                .ToList();
-            keywordsToRemove.ForEach(k => scientificPaper.Keywords.Remove(k));
-            //Reminder delete them from Database
+            var keywordsToRemove = new List<Keyword>();
+            foreach (var keyword in scientificPaper.Keywords)
+            {
+                if (!scientificPaperEditDto.Keywords.Contains(keyword.Name))
+                    keywordsToRemove.Add(keyword);
+            }
+
+            foreach (var keywordToRemove in keywordsToRemove)
+            {
+                scientificPaper.Keywords.Remove(keywordToRemove);
+            }
+
+            foreach (var keyword in scientificPaperEditDto.Keywords)
+            {
+                if (!scientificPaper.Keywords.Select(k => k.Name).Contains(keyword))
+                {
+                    var kw1=new Keyword { Name = keyword };
+                    var kw2 = _unitOfWork.Keywords.GetByName(keyword);
+                    if (kw2 == null)
+                    {
+                        scientificPaper.Keywords.Add(kw1);
+                    }
+                    else
+                    {
+                        scientificPaper.Keywords.Add(kw2);
+                    }
+                }
+            }
+
             _unitOfWork.ScientificPapers.Update(scientificPaper);
             await _unitOfWork.CompleteAsync();
 
-            var newState = new ScientificPaperMemento(scientificPaper);
-            var message = new ScientificPaperEditMessage
-            {
-                PreviousState = previousState,
-                NewState = newState,
-                EditorName = user.UserName
-            };
-            await _hubContext.Clients.Group(scientificPaper.Id.ToString()).SendAsync("EditScientificPaper", message);
+            var newState = scientificPaper.AsDto();
 
-            return Ok(scientificPaper);
+            await _hubContext.Clients.Group(scientificPaper.Id.ToString()).SendAsync("EditedPaper", newState);
+            return Ok(scientificPaper.AsDto());
         }
 
-        [HttpPost("addUsers/{id}")]
-        public async Task<IActionResult> AddUserToScientificPaper(int id, [FromBody] ScientificPaperUserDto scientificPaperUserDto)
+        [HttpPost("addUsers")]
+        public async Task<IActionResult> AddUserToScientificPaper([FromBody] AddUserDto userDto)
         {
             string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var user = await _userManager.FindByEmailAsync(userId);
 
-            var scientificPaper = _unitOfWork.ScientificPapers.GetById(id, false, true, false);
+            var scientificPaper = _unitOfWork.ScientificPapers.GetById(userDto.PaperId, true, true, false, false, false);
             if (scientificPaper == null)
             {
                 return NotFound();
@@ -114,7 +158,9 @@ namespace TheScientistAPI.Controllers
                 return Unauthorized();
             }
 
-            var userToAdd = await _userManager.FindByNameAsync(scientificPaperUserDto.UserName);
+            var userToAdd = await _userManager.Users.Include(u => u.UserRoles)
+                .FirstOrDefaultAsync(u => u.UserName == userDto.UserName);
+
             if (userToAdd == null)
             {
                 return BadRequest("User with provided UserName not found.");
@@ -131,7 +177,7 @@ namespace TheScientistAPI.Controllers
                 return BadRequest("User is already added to the scientific paper with provided role.");
             }
 
-            if (scientificPaperUserDto.Role != UserRoleType.Editor && scientificPaperUserDto.Role != UserRoleType.Reviewer)
+            if (userDto.Role != UserRoleType.Editor && userDto.Role != UserRoleType.Reviewer)
             {
                 return BadRequest("Invalid Role.");
             }
@@ -139,133 +185,563 @@ namespace TheScientistAPI.Controllers
             var userRole = new UserRole
             {
                 User = userToAdd,
-                RoleType = scientificPaperUserDto.Role,
+                RoleType = userDto.Role,
                 ScientificPaper = scientificPaper
             };
 
             _unitOfWork.UserRoles.Add(userRole);
             await _unitOfWork.CompleteAsync();
 
-            await _hubContext.Groups.AddToGroupAsync("1234",scientificPaper.Id.ToString());
+            userToAdd.UserRoles.Add(userRole);
+            scientificPaper.UserRoles.Add(userRole);
 
+            await _unitOfWork.CompleteAsync();
 
-            return Ok(scientificPaper);
-        }
-
-        [HttpPost("addSection/{id}")]
-        public async Task<IActionResult> AddSectionToScientificPaper(int id, [FromBody] SectionCreateDto sectionCreateDto)
-        {
-            string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var user = await _userManager.FindByEmailAsync(userId);
-
-            var scientificPaper = _unitOfWork.ScientificPapers.GetById(id, false, true, true);
-            if (scientificPaper == null)
+            var u = new ApplicationUser
             {
-                return NotFound();
-            }
-            var userRole = scientificPaper.UserRoles.FirstOrDefault(ur => ur.User == user);
-            if (user!=scientificPaper.Creator || userRole == null || userRole.RoleType== UserRoleType.Reviewer)
-            {
-                return Unauthorized();
-            }
-
-            if(sectionCreateDto.Type != SectionType.Code && sectionCreateDto.Type != SectionType.Image && sectionCreateDto.Type != SectionType.Text)
-            {
-                return BadRequest("Invalid Type.");
-            }
-
-            var section = new Section
-            {
-                Paper = scientificPaper,
-                Title = sectionCreateDto.Title,
-                Type = sectionCreateDto.Type,
-                Url = sectionCreateDto.Url,
-                Content = sectionCreateDto.Content
+                Id = userRole.User.Id,
+                Name = userRole.User.FirstName + " " + userRole.User.LastName,
+                Email = userRole.User.Email,
+                UserName = userRole.User.UserName
             };
-
-            _unitOfWork.Sections.Add(section);
-            await _unitOfWork.CompleteAsync();
-
-            return Ok(section);
+            userRole.User = u;
+            await _hubContext.Clients.Group(scientificPaper.Id.ToString()).SendAsync("NewUser", userRole);
+            await _hubContext.Clients.Group(userToAdd.Email.ToString()).SendAsync("AddedAsRole", scientificPaper.AsDto());
+            return Ok(userRole);
         }
 
-        [HttpPost("updateSection/{id}")]
-        public async Task<IActionResult> UpdateSectionToScientificPaper(int id,[FromBody] SectionEditDto sectionEditDto)
+        [HttpPost("addTextSection")]
+        public async Task<IActionResult> AddSectionToScientificPaper([FromBody] TextSectionDto textSectionDto)
         {
-            string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var user = await _userManager.FindByEmailAsync(userId);
+            try
+            {
+                // Validation
+                if (textSectionDto == null)
+                {
+                    return BadRequest("Invalid request body.");
+                }
 
-            var scientificPaper = _unitOfWork.ScientificPapers.GetById(id, false, true, true);
+                string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                var user = await _userManager.FindByEmailAsync(userId);
+
+                // Section creation
+                Section section = new Section
+                {
+                    Title = textSectionDto.Title,
+                    Type = SectionType.Text,
+                    Content = string.Join("\n", textSectionDto.Paragraphs),
+                    Status = SectionStatus.Active
+                };
+
+                if (textSectionDto.PaperId!=0)
+                {
+                    var scientificPaper = _unitOfWork.ScientificPapers.GetById(textSectionDto.PaperId, false, true, true, false, false);
+                    if (scientificPaper == null)
+                    {
+                        return NotFound();
+                    }
+
+                    var userRole = scientificPaper.UserRoles.FirstOrDefault(ur => ur.User == user);
+                    if (user != scientificPaper.Creator && (userRole == null || userRole.RoleType == UserRoleType.Reviewer))
+                    {
+                        return Unauthorized();
+                    }
+
+                    scientificPaper.Sections.Add(section);
+                    section.Paper = scientificPaper;
+                    await _unitOfWork.CompleteAsync();
+                    await NotifyClients(scientificPaper.Id.ToString(), section.AsDto());
+                }
+                else if(textSectionDto.SectionId != 0)
+                {
+                    var sec = _unitOfWork.Sections.GetAllIncluding(s=>s.Paper).ToList();
+                    var parentSection = _unitOfWork.Sections.GetById(textSectionDto.SectionId, true);
+                    if (parentSection == null)
+                    {
+                        return NotFound();
+                    }
+                    section.Paper = parentSection.Paper;
+
+                    parentSection.Subsections.Add(section);
+                    await _unitOfWork.CompleteAsync();
+
+                    await NotifyClients(parentSection.Paper.Id.ToString(), section.AsDto());
+                }
+
+                return Ok(section.AsDto());
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            }
+        }
+
+        [HttpPost("addCodeSection")]
+        public async Task<IActionResult> AddSectionToScientificPaper([FromBody] CodeSectionDto codeSectionDto)
+        {
+            try
+            {
+                // Validation
+                if (codeSectionDto == null)
+                {
+                    return BadRequest("Invalid request body.");
+                }
+
+                string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                var user = await _userManager.FindByEmailAsync(userId);
+
+                // Section creation
+                Section section = new Section
+                        {
+                            Title = codeSectionDto.Title,
+                            Type = SectionType.Code,
+                            Content = codeSectionDto.Code,
+                            Language = codeSectionDto.Language,
+                            Status = SectionStatus.Active
+                        };
+
+                if (codeSectionDto.PaperId != 0)
+                {
+                    var scientificPaper = _unitOfWork.ScientificPapers.GetById(codeSectionDto.PaperId, false, true, true, false, false);
+                    if (scientificPaper == null)
+                    {
+                        return NotFound();
+                    }
+
+                    var userRole = scientificPaper.UserRoles.FirstOrDefault(ur => ur.User == user);
+                    if (user != scientificPaper.Creator && (userRole == null || userRole.RoleType == UserRoleType.Reviewer))
+                    {
+                        return Unauthorized();
+                    }
+                    section.Paper = scientificPaper;
+                    scientificPaper.Sections.Add(section);
+                    await _unitOfWork.CompleteAsync();
+                    await NotifyClients(scientificPaper.Id.ToString(), section.AsDto());
+                }
+                else if (codeSectionDto.SectionId != 0)
+                {
+                    var parentSection = _unitOfWork.Sections.GetById(codeSectionDto.SectionId, true);
+                    if (parentSection == null)
+                    {
+                        return NotFound();
+                    }
+
+                    section.Paper = parentSection.Paper;
+                    parentSection.Subsections.Add(section);
+                    await _unitOfWork.CompleteAsync();
+
+                    await NotifyClients(parentSection.Paper.Id.ToString(), section.AsDto());
+                }
+
+                return Ok(section.AsDto());
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            }
+        }
+
+        [HttpPost("addImageSection")]
+        public async Task<IActionResult> AddSectionToScientificPaper([FromBody] ImageSectionDto imageSectionDto)
+        {
+            try
+            {
+                // Validation
+                if (imageSectionDto == null)
+                {
+                    return BadRequest("Invalid request body.");
+                }
+
+                string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                var user = await _userManager.FindByEmailAsync(userId);
+
+                // Section creation
+                Section section = new Section
+                {
+                    Title = imageSectionDto.Title,
+                    Type = SectionType.Image,
+                    Url = imageSectionDto.Url,
+                    Content = imageSectionDto.Description,
+                    Status = SectionStatus.Active
+                };
+
+                if (imageSectionDto.PaperId != 0)
+                {
+                    var scientificPaper = _unitOfWork.ScientificPapers.GetById(imageSectionDto.PaperId, false, true, true, false, false);
+                    if (scientificPaper == null)
+                    {
+                        return NotFound();
+                    }
+
+                    var userRole = scientificPaper.UserRoles.FirstOrDefault(ur => ur.User == user);
+                    if (user != scientificPaper.Creator && (userRole == null || userRole.RoleType == UserRoleType.Reviewer))
+                    {
+                        return Unauthorized();
+                    }
+                    section.Paper = scientificPaper;
+                    scientificPaper.Sections.Add(section);
+                    await _unitOfWork.CompleteAsync();
+                    await NotifyClients(scientificPaper.Id.ToString(), section.AsDto());
+                }
+                else if (imageSectionDto.SectionId != 0)
+                {
+                    var parentSection = _unitOfWork.Sections.GetById(imageSectionDto.SectionId, true);
+                    if (parentSection == null)
+                    {
+                        return NotFound();
+                    }
+
+                    section.Paper = parentSection.Paper;
+                    parentSection.Subsections.Add(section);
+                    await _unitOfWork.CompleteAsync();
+
+                    await NotifyClients(parentSection.Paper.Id.ToString(), section.AsDto());
+                }
+
+                return Ok(section.AsDto());
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            }
+        }
+
+        private async Task NotifyClients(string scientificPaperId, SectionDto sectionDto)
+        {
+            await _hubContext.Clients.Group(scientificPaperId).SendAsync("SectionAdded", sectionDto);
+        }
+
+        [HttpPost("addNewReference")]
+        public async Task<IActionResult> AddReference([FromBody] ReferenceCreateDto referenceDto)
+        {
+            var scientificPaper = _unitOfWork.ScientificPapers.GetById(referenceDto.PaperId, false, false, false, true, false);
             if (scientificPaper == null)
             {
                 return NotFound();
             }
-
-            var userRole = scientificPaper.UserRoles.FirstOrDefault(ur => ur.User == user);
-            if (user != scientificPaper.Creator || userRole == null || userRole.RoleType == UserRoleType.Reviewer)
+            if(referenceDto.Id!=null)
             {
-                return Unauthorized();
+                var reference = _unitOfWork.References.GetByIdWithAuthors((int)referenceDto.Id);
+                if (reference == null)
+                    return BadRequest("Not a valid reference to link to");
+                scientificPaper.References.Add(reference);
+                await _unitOfWork.CompleteAsync();
+                await _hubContext.Clients.Group(scientificPaper.Id.ToString()).SendAsync("EditedPaper", reference.AsDto());
+                return Ok(reference.AsDto());
             }
-
-            if (sectionEditDto.PaperId!= scientificPaper.Id)
+            else if (referenceDto.LinkedPaperId != null)
             {
-                return BadRequest("Does not belong to the right paper.");
+                var paper = _unitOfWork.ScientificPapers.GetById(((int)referenceDto.LinkedPaperId), false, true, false, false, false);
+                if (paper == null)
+                    return BadRequest("Not a valid paper to link reference to");
+                var reference = new Reference
+                {
+                    Title = paper.Title,
+                    Journal = paper.Journal,
+                    Year = paper.Year,
+                    LinkedPaperId = paper.Id
+                };
+                reference.Authors = new List<Author>
+                {
+                   new Author {Name=paper.Creator.FirstName + " " + paper.Creator.LastName }
+                };
+                foreach(var user in paper.UserRoles)
+                {
+                    if (user.RoleType == UserRoleType.Editor)
+                        reference.Authors.Add(new Author { Name=user.User.FirstName + " " + user.User.LastName });
+                }
+                scientificPaper.References.Add(reference);
+                await _unitOfWork.CompleteAsync();
+                await _hubContext.Clients.Group(scientificPaper.Id.ToString()).SendAsync("EditedPaper", reference.AsDto());
+                return Ok(reference.AsDto());
             }
-
-            if (sectionEditDto.Type != SectionType.Code && sectionEditDto.Type != SectionType.Image && sectionEditDto.Type != SectionType.Text)
+            else
             {
-                return BadRequest("Invalid Type.");
+                var reference = new Reference
+                {
+                    Title = referenceDto.Title,
+                    Journal = referenceDto.Journal,
+                    Year = (int)referenceDto.Year,
+                    Authors = referenceDto.Authors.Select(a => new Author { Name = a }).ToList()
+                };
+                scientificPaper.References.Add(reference);
+                await _unitOfWork.CompleteAsync();
+                await _hubContext.Clients.Group(scientificPaper.Id.ToString()).SendAsync("EditedPaper", reference.AsDto());
+                return Ok(reference.AsDto());
             }
-
-            var section = _unitOfWork.Sections.GetById(sectionEditDto.Id);
-            section.Title = sectionEditDto.Title;
-            section.Content = sectionEditDto.Content;
-            section.Url = sectionEditDto.Content;
-
-            _unitOfWork.Sections.Update(section);
-            await _unitOfWork.CompleteAsync();
-
-            var userIds = new List<string>();
-            userIds.Add(scientificPaper.Creator.Id);
-            foreach(var u in scientificPaper.UserRoles) userIds.Add(u.User.Id);
-
-            await _hubContext.Clients.Users(userIds).SendAsync("EditScientificPaper", scientificPaper);
-
-            return Ok(section);
         }
 
-        [HttpGet("getSections/{id}")]
-        public async Task<IActionResult> GetSectionsOfScientificPaper(int id)
+        [HttpGet("getAllUsersPapers")]
+        public async Task<IActionResult> GetAllUsersPapers()
         {
             string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var user = await _userManager.FindByEmailAsync(userId);
 
-            var scientificPaper = _unitOfWork.ScientificPapers.GetById(id, false, true, true);
-            if (scientificPaper == null)
-            {
-                return NotFound();
-            }
-
-            var userRole = scientificPaper.UserRoles.FirstOrDefault(ur => ur.User == user);
-            if (user != scientificPaper.Creator || userRole == null)
-            {
-                return Unauthorized();
-            }
-
-            return Ok(scientificPaper.Sections);
-        }
-        [HttpGet("getPaperUser")]
-        public async Task<IActionResult> GetAllPaperOfUser()
-        {
-            string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var user = await _userManager.FindByEmailAsync(userId);
-
-            var papers =_unitOfWork.ScientificPapers.GetAllIncluding(p => p.Creator, p => p.UserRoles);
+            var papers = _unitOfWork.ScientificPapers.GetAllIncluding(p => p.Creator, p => p.UserRoles, p => p.Keywords);
             var myPapers = papers.Where(p => p.Creator.Id == user.Id || p.UserRoles.Any(ur => ur.User.Id == user.Id &&
                                        (ur.RoleType == UserRoleType.Editor || ur.RoleType == UserRoleType.Reviewer))).ToList();
 
-            return Ok(myPapers);
-
+            return Ok(myPapers.Select(paper=>paper.AsDto()).ToList());
         }
+
+        [HttpGet("getAllPublicPapers")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetAllPublicPapers()
+        {
+            var papers = _unitOfWork.ScientificPapers.GetAllIncluding(p => p.Creator, p => p.UserRoles, p => p.Keywords);
+            var publicPapers = papers.Where(p => p.IsPublic).ToList();
+
+            string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var user = await _userManager.FindByEmailAsync(userId);
+            if (user!=null)
+            {
+                var myPapers = papers.Where(p => p.Creator.Id == user.Id || p.UserRoles.Any(ur => ur.User.Id == user.Id &&
+                                           (ur.RoleType == UserRoleType.Editor || ur.RoleType == UserRoleType.Reviewer))).ToList();
+                foreach(var paper in myPapers)
+                {
+                    if(!papers.Contains(paper))
+                    {
+                        publicPapers.Add(paper);
+                    }
+                }
+            }
+
+            return Ok(publicPapers.Select(paper=>paper.AsDto()));
+        }
+
+        [HttpGet("getByKeywords")]
+        [AllowAnonymous]
+        public async Task<IActionResult> SearchPapersByKeywords([FromQuery] List<string> keywords)
+        {
+            string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var user = await _userManager.FindByEmailAsync(userId);
+            var papers = _unitOfWork.ScientificPapers.GetAllIncluding(sp=>sp.Keywords, sp=>sp.Creator)
+                .Where(p => p.Keywords.Any(k => keywords.Contains(k.Name)))
+                .ToList();
+
+            return Ok(papers.Select(p=>p.AsDto()));
+        }
+
+        [HttpGet("getByReferences/{SearchTerm}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> SearchPapersForReferences(string SearchTerm)
+        {
+            string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var user = await _userManager.FindByEmailAsync(userId);
+            var papers = _unitOfWork.ScientificPapers.GetAllIncluding(p => p.References, p=>p.UserRoles, p=>p.Keywords);
+            var matchingPapers = papers.Where(p => p.References.Any(r =>
+                r.Title.Contains(SearchTerm) ||
+                r.Authors.Any(a => a.Name.Contains(SearchTerm)) ||
+                r.Journal.Contains(SearchTerm) ||
+                r.Year.ToString().Contains(SearchTerm)
+                )).ToList();
+
+            return Ok(matchingPapers.Select(paper=>paper.AsDto()));
+        }
+
+        [HttpGet("getByReference/{id}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> SearchPapersForReference(int Id)
+        {
+            string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var user = await _userManager.FindByEmailAsync(userId);
+            var papers = _unitOfWork.ScientificPapers.GetAllIncluding(p => p.References);
+            var matchingPapers = papers.Where(p => p.References.Any(r => r.Id == Id))
+                .ToList();
+
+            return Ok(matchingPapers);
+        }
+
+        [HttpGet("getFullPublicPaper/{id}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetFullPublicPaper(int id)
+        {
+            string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var user = await _userManager.FindByEmailAsync(userId);
+            var scientificPaper = _unitOfWork.ScientificPapers.GetById(id, true, true, true, true, false);
+            if (scientificPaper == null)
+            {
+                return NotFound();
+            }
+            if (!scientificPaper.IsPublic)
+            {
+                return Unauthorized();
+            }
+            var sections = scientificPaper.Sections.Where(section => section.Status == SectionStatus.Finnished).ToList();
+            scientificPaper.Sections = sections;
+
+            return Ok(scientificPaper.AsPublicDto());
+        }
+
+        [HttpGet("getFullEditablePaper/{id}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetFullEditablePaper(int id)
+        {
+            string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var user = await _userManager.FindByEmailAsync(userId);
+            var scientificPaper = _unitOfWork.ScientificPapers.GetById(id, true, true, true, true, true);
+            if (scientificPaper == null)
+            {
+                return NotFound();
+            }
+
+           return Ok(scientificPaper.AsPublicDto());
+        }
+
+        [HttpPost("sendMessage")]
+        public async Task<IActionResult> SendMessage([FromBody] MessageDto messageDto)
+        {
+            string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var user = await _userManager.FindByEmailAsync(userId);
+            var scientificPaper = _unitOfWork.ScientificPapers.GetById(messageDto.PaperId, false, true, false, false, true);
+            if (scientificPaper == null)
+            {
+                return NotFound();
+            }
+            var message = new Message
+            {
+                Text = messageDto.Text,
+                User = user
+            };
+            scientificPaper.Messages.Add(message);
+            await _unitOfWork.CompleteAsync();
+            var messageUser = new MessageUser
+            {
+                Message = message,
+                User = scientificPaper.Creator,
+                Seen = scientificPaper.Creator==user
+            };
+            _unitOfWork.MessageUsers.Add(messageUser);
+            await _unitOfWork.CompleteAsync();
+            foreach (var usr in scientificPaper.UserRoles)
+            {
+               messageUser = new MessageUser
+                {
+                    Message = message,
+                    User = usr.User,
+                    Seen = usr.User == user
+                };
+                _unitOfWork.MessageUsers.Add(messageUser);
+                await _unitOfWork.CompleteAsync();
+            }
+            await _hubContext.Clients.Group(scientificPaper.Id.ToString()).SendAsync("NewMessage", message.AsDto());
+
+            return Ok(message.AsDto());
+        }
+
+        [HttpPost("getAllMessages/{Id}")]
+        public async Task<IActionResult> GetAllMessages(int Id)
+        {
+            string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var user = await _userManager.FindByEmailAsync(userId);
+            var scientificPaper = _unitOfWork.ScientificPapers.GetById(Id, false, true, false, false, true);
+            if (scientificPaper == null)
+            {
+                return NotFound();
+            }
+            var messages = _unitOfWork.MessageUsers.GetByUserAndPaper(user.Id, Id);
+            foreach(var message in messages)
+            {
+                message.Seen = true;
+            }
+            await _unitOfWork.CompleteAsync();
+            return Ok(messages.Select(m=>m.Message.AsDto()));
+        }
+
+        [HttpGet("getAllUnseenMessages/{Id}")]
+        public async Task<IActionResult> GetAllUnseenMessages(int Id)
+        {
+            string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var user = await _userManager.FindByEmailAsync(userId);
+            var scientificPaper = _unitOfWork.ScientificPapers.GetById(Id, false, true, false, false, true);
+            if (scientificPaper == null)
+            {
+                return NotFound();
+            }
+            var messages = _unitOfWork.MessageUsers.GetByUserAndPaper(user.Id, Id);
+            var seenMessages = messages.Where(m => !m.Seen).ToList();
+            await _unitOfWork.CompleteAsync();
+            return Ok(seenMessages.Select(m => m.Message.AsDto()));
+        }
+
+        [AllowAnonymous]
+        [HttpGet("getAllKeywords")]
+        public async Task<IActionResult> GetAllKeywords()
+        {
+            var keywords = _unitOfWork.Keywords.GetAll();
+            return Ok(keywords);
+        }
+
+        [AllowAnonymous]
+        [HttpGet("getAllReferences")]
+        public async Task<IActionResult> GetAllReferences()
+        {
+            var references = _unitOfWork.References.GetAllIncluding(p=>p.Authors);
+            return Ok(references.Select(k=>k.AsDto()));
+        }
+
+        //[HttpPost("updateSection/{id}")]
+        //public async Task<IActionResult> UpdateSectionToScientificPaper(int id, [FromBody] SectionEditDto sectionEditDto)
+        //{
+        //    string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        //    var user = await _userManager.FindByEmailAsync(userId);
+
+        //    var scientificPaper = _unitOfWork.ScientificPapers.GetById(id, false, true, true, false);
+        //    if (scientificPaper == null)
+        //    {
+        //        return NotFound();
+        //    }
+
+        //    var userRole = scientificPaper.UserRoles.FirstOrDefault(ur => ur.User == user);
+        //    if (user != scientificPaper.Creator || userRole == null || userRole.RoleType == UserRoleType.Reviewer)
+        //    {
+        //        return Unauthorized();
+        //    }
+
+        //    if (sectionEditDto.PaperId != scientificPaper.Id)
+        //    {
+        //        return BadRequest("Does not belong to the right paper.");
+        //    }
+
+        //    if (sectionEditDto.Type != SectionType.Code && sectionEditDto.Type != SectionType.Image && sectionEditDto.Type != SectionType.Text)
+        //    {
+        //        return BadRequest("Invalid Type.");
+        //    }
+
+        //    var section = _unitOfWork.Sections.GetById(sectionEditDto.Id);
+        //    section.Title = sectionEditDto.Title;
+        //    section.Content = sectionEditDto.Content;
+        //    section.Url = sectionEditDto.Content;
+
+        //    _unitOfWork.Sections.Update(section);
+        //    await _unitOfWork.CompleteAsync();
+
+        //    var userIds = new List<string>();
+        //    userIds.Add(scientificPaper.Creator.Id);
+        //    foreach (var u in scientificPaper.UserRoles) userIds.Add(u.User.Id);
+
+        //    return Ok(section);
+        //}
+
+        //[HttpGet("getSections/{id}")]
+        //public async Task<IActionResult> GetSectionsOfScientificPaper(int id)
+        //{
+        //    string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        //    var user = await _userManager.FindByEmailAsync(userId);
+
+        //    var scientificPaper = _unitOfWork.ScientificPapers.GetById(id, false, true, true, false);
+        //    if (scientificPaper == null)
+        //    {
+        //        return NotFound();
+        //    }
+
+        //    var userRole = scientificPaper.UserRoles.FirstOrDefault(ur => ur.User == user);
+        //    if (user != scientificPaper.Creator || userRole == null)
+        //    {
+        //        return Unauthorized();
+        //    }
+
+        //    return Ok(scientificPaper.Sections);
+        //}
     }
 }

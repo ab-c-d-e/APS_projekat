@@ -1,0 +1,58 @@
+<mat-sidenav-container class="sidenav-container">
+  <mat-sidenav #drawer class="sidenav" fixedInViewport="true" color="primary"
+    [attr.role]="(isHandset$ | async) ? 'dialog' : 'navigation'" [mode]="(isHandset$ | async) ? 'over' : 'side'"
+    [opened]="false">
+    <mat-toolbar>Menu</mat-toolbar>
+    <mat-nav-list>
+      <a *ngIf="isLogedIn" mat-list-item href="#">
+        <mat-icon>account_circle</mat-icon>
+        {{name}}
+      </a>
+      <a mat-list-item href="#">
+        <mat-icon>home</mat-icon>
+        Home
+      </a>
+      <a mat-list-item (click)="toggleOptionsPaper()">
+        <mat-icon>description</mat-icon>
+        Scientific Papers
+      </a>
+      <a *ngIf="showOptionsPaper" class="darker" mat-list-item href="#">Public Papers</a>
+      <a *ngIf="showOptionsPaper && isLogedIn" class="darker" mat-list-item href="/papers">Your Papers</a>
+      <a *ngIf="showOptionsPaper && isLogedIn" class="darker" mat-list-item href="/newpaper">New Paper</a>
+      <a *ngIf="isLogedIn" mat-list-item (click)="toggleOptionsTask()">
+        <mat-icon>tasks</mat-icon>
+        Tasks
+      </a>
+      <a *ngIf="showOptionsTask" class="darker" mat-list-item href="#">Active Tasks</a>
+      <a *ngIf="showOptionsTask" class="darker" mat-list-item href="#">Your Tasks</a>
+      <a *ngIf="!isLogedIn" mat-list-item class="highlight" href="/login">Login</a>
+      <a *ngIf="!isLogedIn" mat-list-item class="highlight" href="/register">Register</a>
+      <a *ngIf="isLogedIn" mat-list-item class="highlight" href="/logout">Logout</a>
+    </mat-nav-list>
+  </mat-sidenav>
+  <mat-sidenav-content>
+    <mat-toolbar color="primary">
+      <button type="button" aria-label="Toggle sidenav" mat-icon-button (click)="drawer.toggle()">
+        <mat-icon aria-label="Side nav toggle icon">science</mat-icon>
+      </button>
+      <span>TheScientist</span>
+      <span class="spacer"></span>
+      <a href="#">Home</a>
+      <a href="/papers">Scientific Papers</a>
+      <a *ngIf="isLogedIn" href="#">Tasks</a>
+      <a *ngIf="isLogedIn" href="#">
+        <mat-icon>notifications</mat-icon>
+        <!-- <mat-icon>notifications_active</mat-icon> -->
+        Notifications
+      </a>
+      <a *ngIf="isLogedIn" href="#">
+        <mat-icon>chat_bubble_outline</mat-icon>
+        <!-- <mat-icon>messages</mat-icon> -->
+        Messages
+      </a>
+    </mat-toolbar>
+    <div class="main-content">
+      <ng-content></ng-content>
+    </div>
+  </mat-sidenav-content>
+</mat-sidenav-container>

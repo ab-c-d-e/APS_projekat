@@ -1,0 +1,21 @@
+{
+  "$schema": "./node_modules/@openapitools/openapi-generator-cli/config.schema.json",
+  "spaces": 2,
+  "generator-cli": {
+    "version": "6.4.0",
+    "repository": {
+			"downloadUrl": "https://oss.sonatype.org/content/repositories/snapshots/org/openapitools/openapi-generator-cli/6.0.0-SNAPSHOT/openapi-generator-cli-${versionName}.jar"
+  },
+  "generators": {
+    "angular": {
+      "generatorName": "typescript-angular",
+      "inputSpec": "http://localhost:7149/swagger/v1/swagger.json",
+      "output": "./src/app/services/api",
+      "additionalProperties": {
+        "ngVersion": "13.1.0",
+        "stringEnums": true
+      }
+    }
+  }
+}
+}

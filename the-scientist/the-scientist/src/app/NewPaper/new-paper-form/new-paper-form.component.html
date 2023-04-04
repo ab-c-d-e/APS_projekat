@@ -1,0 +1,44 @@
+<mat-card class="my-card">
+  <mat-card-content>
+    <form (ngSubmit)="onSubmit()">
+      <mat-form-field appearance="outline">
+        <mat-label>Title</mat-label>
+        <input matInput type="text" placeholder="Enter the title" [(ngModel)]="title" name="title" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Description</mat-label>
+        <textarea matInput placeholder="Enter the description" [(ngModel)]="description" name="description"></textarea>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Journal</mat-label>
+        <input matInput type="text" placeholder="Enter the journal" [(ngModel)]="journal" name="journal" />
+      </mat-form-field>
+
+      <mat-form-field appearance="fill">
+        <mat-label>Keywords</mat-label>
+        <mat-chip-grid #chipGrid aria-label="Keyword selection">
+          <mat-chip-row *ngFor="let keyword of keywords" (removed)="remove(keyword)">
+            {{keyword}}
+            <button matChipRemove [attr.aria-label]="'remove ' + keyword">
+              <mat-icon>cancel</mat-icon>
+            </button>
+          </mat-chip-row>
+        </mat-chip-grid>
+        <input placeholder="New Keyword..." #keywordInput [formControl]="keywordCtrl" [matChipInputFor]="chipGrid"
+          [matAutocomplete]="auto" [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
+          (matChipInputTokenEnd)="add($event)" />
+        <mat-autocomplete #auto="matAutocomplete" (optionSelected)="selected($event)">
+          <mat-option *ngFor="let keyword of filteredKeywords | async" [value]="keyword">
+            {{keyword}}
+          </mat-option>
+        </mat-autocomplete>
+      </mat-form-field>
+
+      <mat-checkbox [(ngModel)]="isPublic" color="primary" name="public">Public</mat-checkbox>
+
+      <button mat-raised-button color="primary" type="submit">Submit</button>
+    </form>
+  </mat-card-content>
+</mat-card>

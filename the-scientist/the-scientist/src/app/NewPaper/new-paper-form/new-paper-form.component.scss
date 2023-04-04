@@ -1,0 +1,10 @@
+.my-card {
+    max-width: calc(100vw - 100px);
+    max-height: calc(100vh - 100px);
+    margin: auto;
+    margin-top: 80px;
+  }
+  form {
+    display: flex;
+    flex-direction: column;
+  }

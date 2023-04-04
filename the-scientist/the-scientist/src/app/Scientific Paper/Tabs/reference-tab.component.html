@@ -1,0 +1,14 @@
+<mat-card *ngIf="paper" class="my-card">
+    <mat-card-actions>
+        <button *ngIf="creator" mat-raised-button color="primary" (click)="show()">ADD</button>
+        <button *ngIf="creator && openButtons" mat-raised-button color="accent" (click)="linkExistingPaper()">Link Existing
+            Paper</button>
+        <button *ngIf="creator && openButtons" mat-raised-button color="accent" (click)="addReference()">Add
+            Reference</button>
+    </mat-card-actions>
+    <mat-card-content>
+        <div cdkDropList class="example-list" (cdkDropListDropped)="drop($event)">
+            <div class="example-box" *ngFor="let reference of references" cdkDrag>{{reference.text}}</div>
+        </div>
+    </mat-card-content>
+</mat-card>

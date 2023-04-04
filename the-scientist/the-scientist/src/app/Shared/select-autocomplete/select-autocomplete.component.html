@@ -1,0 +1,37 @@
+<div class="chip-list-wrapper">
+    <mat-chip-listbox #chipList>
+        <ng-container *ngFor="let select of selectData">
+            <mat-chip class="cardinal-colors" (click)="removeChip(select)" color="primary">
+                {{ select.item }}
+                <mat-icon class="mat-chip-remove">cancel</mat-icon>
+            </mat-chip>
+        </ng-container>
+    </mat-chip-listbox>
+</div>
+
+<mat-form-field class="full-width" appearance="outline">
+    <input matInput type="text" [placeholder]="placeholder" [matAutocomplete]="auto" [formControl]="selectControl">
+</mat-form-field>
+
+<mat-autocomplete #auto="matAutocomplete" [displayWith]="displayFn" position="above" (click)="$event.stopPropagation()" panelClass="my-autocomplete-panel">
+    <mat-option (click)="$event.stopPropagation()" >
+        <div class="add-option"  (click)="$event.stopPropagation()">
+            <mat-form-field appearance="outline"  (click)="$event.stopPropagation()">
+                <mat-label>Add option</mat-label>
+                <input matInput placeholder="" (keydown.enter)="$event.stopPropagation()"
+                    (keydown.space)="$event.stopPropagation()" (click)="$event.stopPropagation()" [(ngModel)]="newOption">
+            </mat-form-field>
+            <button matSuffix mat-icon-button (click)="$event.stopPropagation(); addOption()">
+                <mat-icon>add</mat-icon>
+            </button>
+        </div>
+    </mat-option>
+    <mat-option *ngFor="let data of filteredData | async" (click)="$event.stopPropagation()">
+        <div (click)=" $event.stopPropagation(); optionClicked($event, data);">
+            <mat-checkbox [checked]="data.selected" (change)="toggleSelection(data)" (click)="$event.stopPropagation()"
+                color="primary">
+                {{ data.item }}
+            </mat-checkbox>
+        </div>
+    </mat-option>
+</mat-autocomplete>

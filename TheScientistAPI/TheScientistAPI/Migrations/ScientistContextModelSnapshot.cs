@@ -22,6 +22,21 @@ namespace TheScientistAPI.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder, 1L, 1);
 
+            modelBuilder.Entity("KeywordScientificPaper", b =>
+                {
+                    b.Property<int>("KeywordsId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PapersId")
+                        .HasColumnType("int");
+
+                    b.HasKey("KeywordsId", "PapersId");
+
+                    b.HasIndex("PapersId");
+
+                    b.ToTable("KeywordScientificPaper");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
                 {
                     b.Property<string>("Id")
@@ -159,6 +174,21 @@ namespace TheScientistAPI.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("ReferenceScientificPaper", b =>
+                {
+                    b.Property<int>("PapersId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ReferencesId")
+                        .HasColumnType("int");
+
+                    b.HasKey("PapersId", "ReferencesId");
+
+                    b.HasIndex("ReferencesId");
+
+                    b.ToTable("ReferenceScientificPaper");
+                });
+
             modelBuilder.Entity("TheScientistAPI.Model.ApplicationUser", b =>
                 {
                     b.Property<string>("Id")
@@ -232,6 +262,64 @@ namespace TheScientistAPI.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
+            modelBuilder.Entity("TheScientistAPI.Model.Author", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("ReferenceId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReferenceId");
+
+                    b.ToTable("Author");
+                });
+
+            modelBuilder.Entity("TheScientistAPI.Model.Comment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
+
+                    b.Property<int?>("CommentId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Likes")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SectionId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CommentId");
+
+                    b.HasIndex("SectionId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Comments");
+                });
+
             modelBuilder.Entity("TheScientistAPI.Model.Keyword", b =>
                 {
                     b.Property<int>("Id")
@@ -244,14 +332,130 @@ namespace TheScientistAPI.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.HasKey("Id");
+
+                    b.ToTable("Keywords");
+                });
+
+            modelBuilder.Entity("TheScientistAPI.Model.Message", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
+
                     b.Property<int?>("ScientificPaperId")
                         .HasColumnType("int");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
 
                     b.HasKey("Id");
 
                     b.HasIndex("ScientificPaperId");
 
-                    b.ToTable("Keywords");
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Messages");
+                });
+
+            modelBuilder.Entity("TheScientistAPI.Model.MessageUser", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
+
+                    b.Property<int>("MessageId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("Seen")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MessageId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("MessageUsers");
+                });
+
+            modelBuilder.Entity("TheScientistAPI.Model.Notification", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
+
+                    b.Property<int>("CommentId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("Seen")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("TaskId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CommentId");
+
+                    b.HasIndex("TaskId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Notifications");
+                });
+
+            modelBuilder.Entity("TheScientistAPI.Model.PaperTask", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("SectionId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SectionId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("PaperTasks");
                 });
 
             modelBuilder.Entity("TheScientistAPI.Model.Reference", b =>
@@ -262,15 +466,11 @@ namespace TheScientistAPI.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
 
-                    b.Property<string>("Author")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("Journal")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int?>("ScientificPaperId")
+                    b.Property<int>("LinkedPaperId")
                         .HasColumnType("int");
 
                     b.Property<string>("Title")
@@ -281,8 +481,6 @@ namespace TheScientistAPI.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("ScientificPaperId");
 
                     b.ToTable("References");
                 });
@@ -303,15 +501,22 @@ namespace TheScientistAPI.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<bool>("IsFinished")
-                        .HasColumnType("bit");
-
                     b.Property<bool>("IsPublic")
                         .HasColumnType("bit");
+
+                    b.Property<string>("Journal")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
 
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Year")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
@@ -329,13 +534,18 @@ namespace TheScientistAPI.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
 
                     b.Property<string>("Content")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("PaperId")
+                    b.Property<string>("Language")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("PaperId")
                         .HasColumnType("int");
 
                     b.Property<int?>("SectionId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Status")
                         .HasColumnType("int");
 
                     b.Property<string>("Title")
@@ -346,7 +556,6 @@ namespace TheScientistAPI.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("Url")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
@@ -388,6 +597,21 @@ namespace TheScientistAPI.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("UserRoles");
+                });
+
+            modelBuilder.Entity("KeywordScientificPaper", b =>
+                {
+                    b.HasOne("TheScientistAPI.Model.Keyword", null)
+                        .WithMany()
+                        .HasForeignKey("KeywordsId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("TheScientistAPI.Model.ScientificPaper", null)
+                        .WithMany()
+                        .HasForeignKey("PapersId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -441,18 +665,129 @@ namespace TheScientistAPI.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("TheScientistAPI.Model.Keyword", b =>
+            modelBuilder.Entity("ReferenceScientificPaper", b =>
                 {
                     b.HasOne("TheScientistAPI.Model.ScientificPaper", null)
-                        .WithMany("Keywords")
-                        .HasForeignKey("ScientificPaperId");
+                        .WithMany()
+                        .HasForeignKey("PapersId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("TheScientistAPI.Model.Reference", null)
+                        .WithMany()
+                        .HasForeignKey("ReferencesId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
-            modelBuilder.Entity("TheScientistAPI.Model.Reference", b =>
+            modelBuilder.Entity("TheScientistAPI.Model.Author", b =>
+                {
+                    b.HasOne("TheScientistAPI.Model.Reference", null)
+                        .WithMany("Authors")
+                        .HasForeignKey("ReferenceId");
+                });
+
+            modelBuilder.Entity("TheScientistAPI.Model.Comment", b =>
+                {
+                    b.HasOne("TheScientistAPI.Model.Comment", null)
+                        .WithMany("SubComments")
+                        .HasForeignKey("CommentId");
+
+                    b.HasOne("TheScientistAPI.Model.Section", "Section")
+                        .WithMany()
+                        .HasForeignKey("SectionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("TheScientistAPI.Model.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Section");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("TheScientistAPI.Model.Message", b =>
                 {
                     b.HasOne("TheScientistAPI.Model.ScientificPaper", null)
-                        .WithMany("References")
+                        .WithMany("Messages")
                         .HasForeignKey("ScientificPaperId");
+
+                    b.HasOne("TheScientistAPI.Model.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("TheScientistAPI.Model.MessageUser", b =>
+                {
+                    b.HasOne("TheScientistAPI.Model.Message", "Message")
+                        .WithMany()
+                        .HasForeignKey("MessageId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("TheScientistAPI.Model.ApplicationUser", "User")
+                        .WithMany("Messages")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Message");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("TheScientistAPI.Model.Notification", b =>
+                {
+                    b.HasOne("TheScientistAPI.Model.Comment", "Comment")
+                        .WithMany()
+                        .HasForeignKey("CommentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("TheScientistAPI.Model.PaperTask", "Task")
+                        .WithMany()
+                        .HasForeignKey("TaskId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("TheScientistAPI.Model.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Comment");
+
+                    b.Navigation("Task");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("TheScientistAPI.Model.PaperTask", b =>
+                {
+                    b.HasOne("TheScientistAPI.Model.Section", "Section")
+                        .WithMany()
+                        .HasForeignKey("SectionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("TheScientistAPI.Model.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Section");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("TheScientistAPI.Model.ScientificPaper", b =>
@@ -470,9 +805,7 @@ namespace TheScientistAPI.Migrations
                 {
                     b.HasOne("TheScientistAPI.Model.ScientificPaper", "Paper")
                         .WithMany("Sections")
-                        .HasForeignKey("PaperId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("PaperId");
 
                     b.HasOne("TheScientistAPI.Model.Section", null)
                         .WithMany("Subsections")
@@ -506,14 +839,24 @@ namespace TheScientistAPI.Migrations
 
             modelBuilder.Entity("TheScientistAPI.Model.ApplicationUser", b =>
                 {
+                    b.Navigation("Messages");
+
                     b.Navigation("UserRoles");
+                });
+
+            modelBuilder.Entity("TheScientistAPI.Model.Comment", b =>
+                {
+                    b.Navigation("SubComments");
+                });
+
+            modelBuilder.Entity("TheScientistAPI.Model.Reference", b =>
+                {
+                    b.Navigation("Authors");
                 });
 
             modelBuilder.Entity("TheScientistAPI.Model.ScientificPaper", b =>
                 {
-                    b.Navigation("Keywords");
-
-                    b.Navigation("References");
+                    b.Navigation("Messages");
 
                     b.Navigation("Sections");
 

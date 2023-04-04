@@ -1,6 +1,9 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
@@ -44,6 +47,8 @@ namespace TheScientistAPI.Controllers
                     LastName=userDto.LastName,
                     UserName=userDto.UserName,
                     Email=userDto.Email,
+                    UserRoles=new List<UserRole>(),
+                    Messages=new List<MessageUser>()
                 };
 
                 var created= await _userMenager.CreateAsync(user_new, userDto.Password);
@@ -120,6 +125,8 @@ namespace TheScientistAPI.Controllers
                     new Claim("id", user.Id),
                     new Claim(JwtRegisteredClaimNames.Sub, user.Email),
                     new Claim(JwtRegisteredClaimNames.Email, user.Email),
+                    new Claim(JwtRegisteredClaimNames.Name, user.FirstName+" "+user.LastName),
+                    new Claim(JwtRegisteredClaimNames.UniqueName, user.UserName),
                     new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                     new Claim(JwtRegisteredClaimNames.Iat, DateTime.Now.ToUniversalTime().ToString()),
                 }),

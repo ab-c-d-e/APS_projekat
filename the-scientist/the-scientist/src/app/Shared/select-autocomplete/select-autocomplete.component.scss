@@ -1,0 +1,41 @@
+
+.mat-mdc-standard-chip:not {
+    background-color: #673ab7;
+    color: white;
+  }
+  
+  .full-width {
+    width: 100%;
+  }
+  ​
+  .chip-list-wrapper {
+    min-height: 3em;
+  }
+
+  mat-chip{background-color: #673ab7;}
+
+//   mat-autocomplete {
+//     position: absolute;
+//     z-index: 1000;
+//     width: 100%;
+//     max-height: 200px;
+//     overflow-y: auto;
+//     background-color: white;
+//     border: 1px solid #ccc;
+//     box-shadow: 1px 1px 5px #888;
+//     top: unset !important;
+//     left: unset !important;
+//     right: unset !important;
+//     bottom: unset !important;
+//     transform: none !important;
+//     &.mat-autocomplete-panel-below {
+//       margin-top: 0 !important;
+//     }
+//   }
+
+//   .my-autocomplete-panel {
+//     position: absolute;
+//     z-index: 9999;
+//     top: calc(100% + 5px);
+//     left: 0;
+//   }

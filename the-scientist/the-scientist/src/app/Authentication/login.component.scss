@@ -1,0 +1,46 @@
+:host {
+    display: flex;
+    justify-content: center;
+    margin: 100px 0;
+    }
+    
+    mat-card-title, mat-card-content {
+    display: flex;
+    justify-content: center;
+    }
+    
+    .error {
+    padding: 16px;
+    width: 300px;
+    color: white;
+    background-color: red;
+    }
+    
+    .button {
+    display: flex;
+    justify-content: flex-end;
+    }
+    
+    form {
+    display: flex;
+    flex-direction: column;
+    width: 600px;
+    
+    mat-form-field {
+    width: 100%;
+    }
+}
+    
+    .hero-image {
+    width: 100%;
+    height: 500px;
+    background-image: url('../Images/Login.png');
+    background-size: cover;
+    background-position: center;
+    }
+    
+    @media screen and (max-width: 600px) {
+    form {
+    width: 100vh;
+    }
+    }

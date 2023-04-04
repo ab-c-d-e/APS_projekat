@@ -1,14 +1,13 @@
-using System.Text;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using System.Text;
 using TheScientistAPI.Configuration;
 using TheScientistAPI.Data;
 using TheScientistAPI.Model;
 using TheScientistAPI.SignalR;
 
-var myAllowScecificOrigins = "_myAllowSpecificOrigins";
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,6 +16,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSignalR();
+
+
 builder.Services.AddSwaggerGen(c => {
     c.SwaggerDoc("v1", new OpenApiInfo
     {
@@ -45,7 +47,6 @@ builder.Services.AddSwaggerGen(c => {
     });
 });
 
-builder.Services.AddSignalR();
 
 //Unit of work to DI container
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
@@ -88,12 +89,36 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
 //Enable Cors
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy(name: myAllowScecificOrigins,
+    options.AddPolicy(name: "CORS",
         builder =>
         {
-            builder.WithOrigins("http://localhost:4200")
-            .AllowAnyMethod()
-            .AllowAnyHeader();
+            builder.WithOrigins(
+                "https://localhost:4200", 
+                "http://localhost:4200",
+                "http://localhost:8000",
+                        "https://127.0.0.1:8000",
+                        "http://127.0.0.1:8000",
+                        "https://localhost:8000",
+                        "http://localhost:8080",
+                        "https://localhost:8080",
+                        "http://127.0.0.1:8080",
+                        "https://127.0.0.1:8080",
+                        "http://127.0.0.1:5500",
+                        "http://localhost:5500",
+                        "https://127.0.0.1:5500",
+                        "https://localhost:5500",
+                        "https://localhost:5501",
+                        "http://localhost:5501",
+                        "https://127.0.0.1:5501",
+                        "http://127.0.0.1:5501",
+                        "http://localhost:3000",
+                        "https://localhost:3000",
+                        "http://127.0.0.1:4200",
+                        "https://127.0.0.1:4200"
+                )
+                    .AllowAnyHeader()
+                    .AllowAnyMethod()
+                    .AllowCredentials();
         });
 });
 var app = builder.Build();
@@ -107,12 +132,17 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.UseCors(myAllowScecificOrigins);
+app.UseRouting();
+
 
 app.UseAuthentication();
 app.UseAuthorization();
-app.MapHub<ScientistHub>("/scientistHub");
+app.UseCors("CORS");
+
+
 
 app.MapControllers();
+
+app.MapHub<ScientistHub>("/scientistHub");
 
 app.Run();

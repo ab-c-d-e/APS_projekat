@@ -1,0 +1,8 @@
+<mat-card (click)="onClick()" [ngClass]="{ 'new': paper.new, 'creator': paper.creator === userName }" *ngIf="paper">
+    <mat-card-content>{{paper.title}}</mat-card-content>
+    <mat-divider></mat-divider>
+    <mat-card-content>{{paper.abstract}}</mat-card-content>
+    <mat-card-content>{{paper.creator}}</mat-card-content>
+    <mat-card-content>{{paper.journal}}</mat-card-content>
+    <mat-progress-bar *ngIf="paper.status==0" mode="indeterminate"></mat-progress-bar>
+</mat-card>

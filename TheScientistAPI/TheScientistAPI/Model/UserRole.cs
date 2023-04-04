@@ -8,6 +8,7 @@ namespace TheScientistAPI.Model
     {
         [Key]
         public int Id { get; set; }
+
         public ApplicationUser User { get; set; }
 
         [JsonIgnore]

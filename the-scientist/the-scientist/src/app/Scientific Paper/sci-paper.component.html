@@ -1,0 +1,10 @@
+<mat-card class="my-card">
+  <mat-card-content>
+    <mat-paginator [length]="pageLen" [pageSize]="8" (page)="onPageChanged($event)">
+    </mat-paginator>
+
+    <div *ngFor="let paper of pagedPapers">
+      <sci-paper-summary [paper]="paper"></sci-paper-summary>
+    </div>
+  </mat-card-content>
+</mat-card>

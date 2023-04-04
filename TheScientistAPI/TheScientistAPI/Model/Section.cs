@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace TheScientistAPI.Model
 {
@@ -6,11 +7,16 @@ namespace TheScientistAPI.Model
     {
         [Key]
         public int Id { get; set; }
-        public SectionType Type { get; set; }
-        public ScientificPaper Paper { get; set; }
         public string Title { get; set; }
-        public string Url { get; set; }
-        public string Content { get; set; }
+        public string? Url { get; set; }
+        public string? Content { get; set; }
+        public string? Language { get; set; }
+        public SectionType Type { get; set; }
+        public SectionStatus Status { get; set; }
+
+        public ScientificPaper? Paper { get; set; }
+
+        [JsonIgnore]
         public List<Section> Subsections { get; set; }
     }
 
@@ -19,5 +25,13 @@ namespace TheScientistAPI.Model
         Text,
         Code, 
         Image
+    }
+
+    public enum SectionStatus
+    {
+        Active,
+        InReview, 
+        Closed, 
+        Finnished
     }
 }

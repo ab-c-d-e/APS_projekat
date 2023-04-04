@@ -1,0 +1,76 @@
+<mat-card *ngIf="paper" class="my-card">
+    <mat-card-actions>
+        <button *ngIf="creator && !isEditable" mat-raised-button color="accent" (click)="onEdit()">EDIT</button>
+        <button *ngIf="creator && isEditable" mat-raised-button color="accent" (click)="onSave()">SAVE</button>
+        <button *ngIf="creator && isEditable" mat-raised-button color="primary" (click)="onClose()">CLOSE</button>
+    </mat-card-actions>
+    <mat-card-content>
+        <div *ngIf="!isEditable">
+            <h2>{{ paper.title }}</h2>
+            <p><strong>Creator:</strong> {{ paper.creatorName }}</p>
+            <p><strong>Description:</strong> {{ paper.abstract }}</p>
+            <p><strong>Journal:</strong> {{ paper.journal }}</p>
+            <p><strong>Public:</strong> {{ paper.isPublic ? 'Yes' : 'No' }}</p>
+            <p><strong>Status:</strong> {{ statuses[paper.status]}}</p>
+
+            <mat-chip-listbox aria-label="Color selection">
+                <mat-chip *ngFor="let chip of paper.keywords" (click)="onClickKeyword($event, chip)" color="primary">
+                    {{chip.name}}
+                </mat-chip>
+            </mat-chip-listbox>
+        </div>
+
+        <div *ngIf="isEditable">
+            <form>
+                <mat-form-field appearance="outline">
+                    <mat-label>Title</mat-label>
+                    <input matInput type="text" placeholder="Enter the title" [(ngModel)]="paper.title" name="title" />
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                    <mat-label>Description</mat-label>
+                    <textarea matInput placeholder="Enter the description" [(ngModel)]="paper.abstract"
+                        name="description"></textarea>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                    <mat-label>Journal</mat-label>
+                    <input matInput type="text" placeholder="Enter the journal" [(ngModel)]="paper.journal"
+                        name="journal" />
+                </mat-form-field>
+                <div class="rowForForm">
+                    <mat-form-field appearance="fill" class="keywordsForm">
+                        <mat-label>Keywords</mat-label>
+                        <mat-chip-grid #chipGrid aria-label="Keyword selection">
+                            <mat-chip-row *ngFor="let keyword of keywords" (removed)="remove(keyword)">
+                                {{keyword}}
+                                <button matChipRemove [attr.aria-label]="'remove ' + keyword">
+                                    <mat-icon>cancel</mat-icon>
+                                </button>
+                            </mat-chip-row>
+                        </mat-chip-grid>
+                        <input placeholder="New Keyword..." #keywordInput [formControl]="keywordCtrl"
+                            [matChipInputFor]="chipGrid" [matAutocomplete]="auto"
+                            [matChipInputSeparatorKeyCodes]="separatorKeysCodes" (matChipInputTokenEnd)="add($event)" />
+                        <mat-autocomplete #auto="matAutocomplete" (optionSelected)="selected($event)">
+                            <mat-option *ngFor="let keyword of filteredKeywords | async" [value]="keyword">
+                                {{keyword}}
+                            </mat-option>
+                        </mat-autocomplete>
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline">
+                        <mat-label>Status</mat-label>
+                        <mat-select [(ngModel)]="paper.status" name="status">
+                            <mat-option *ngFor="let status of statuses" [value]="status.value">
+                                {{status.text}}
+                            </mat-option>
+                        </mat-select>
+                    </mat-form-field>
+
+                    <mat-checkbox [(ngModel)]="paper.isPublic" color="primary" name="public">Public</mat-checkbox>
+                </div>
+            </form>
+        </div>
+    </mat-card-content>
+</mat-card>
